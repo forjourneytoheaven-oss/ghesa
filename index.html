@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>DAWN</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial;
+    background: linear-gradient(180deg, #050b18, #0a1a2f);
+    color: white;
+}
+
+.container {
+    max-width: 420px;
+    margin: auto;
+    padding: 15px;
+}
+
+h1 {
+    text-align: center;
+}
+
+.card {
+    background: rgba(255,255,255,0.05);
+    border-radius: 20px;
+    padding: 20px;
+    margin-top: 15px;
+}
+
+.price {
+    font-size: 40px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.box {
+    padding: 15px;
+    border-radius: 15px;
+    text-align: center;
+}
+
+.buy { background: rgba(0,255,100,0.2); }
+.sell { background: rgba(255,0,0,0.2); }
+
+.green { color: #00ff88; }
+.red { color: #ff4d4d; }
+
+.news {
+    padding: 10px;
+    margin-top: 10px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 10px;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>DAWN</h1>
+
+<div class="card">
+    <div class="price" id="price">Loading...</div>
+</div>
+
+<div class="card">
+    <h3>Multi Timeframe</h3>
+    <div class="grid" id="tf"></div>
+</div>
+
+<div class="card">
+    <h3>Overall</h3>
+    <h2 id="overall">Loading...</h2>
+</div>
+
+<div class="card">
+    <h3>News</h3>
+    <div id="news"></div>
+</div>
+
+</div>
+
+<script>
+const API = "";
+
+// PRICE
+fetch(API + "/price")
+.then(res => res.json())
+.then(data => {
+    document.getElementById("price").innerText = data.price.toFixed(2);
+});
+
+// ANALYSIS
+fetch(API + "/analysis")
+.then(res => res.json())
+.then(data => {
+
+    let html = "";
+
+    for (let tf in data.timeframes) {
+        let s = data.timeframes[tf].signal;
+        let cls = (s === "BUY") ? "buy" : "sell";
+
+        html += `
+        <div class="box ${cls}">
+            <b>${tf}</b><br>${s}
+        </div>`;
+    }
+
+    document.getElementById("tf").innerHTML = html;
+    document.getElementById("overall").innerText = data.overall;
+});
+
+// NEWS
+fetch(API + "/news")
+.then(res => res.json())
+.then(data => {
+
+    let html = "";
+
+    data.news.forEach(n => {
+        html += `<div class="news">${n.title} (${n.impact})</div>`;
+    });
+
+    document.getElementById("news").innerHTML = html;
+});
+</script>
+
+</body>
+</html>
