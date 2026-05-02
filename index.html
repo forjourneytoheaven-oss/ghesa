@@ -1,164 +1,179 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
+<title>ChatBox</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- 🔥 WAJIB biar full layar HP -->
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-
-<title>Private Chat 💖</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
 
 <style>
-* {
-    box-sizing: border-box;
+body { margin:0; background:#0f0f14; font-family:Poppins; }
+
+.app { max-width:420px; height:100vh; margin:auto; display:flex; flex-direction:column; }
+
+.header { display:flex; align-items:center; padding:10px; background:#1a1a22; }
+.name { color:white; font-size:14px; }
+
+.chat-box { flex:1; overflow-y:auto; padding:10px; }
+
+.message {
+  padding:10px;
+  margin:6px;
+  border-radius:18px;
+  max-width:70%;
 }
 
-body {
-    margin: 0;
-    font-family: 'Segoe UI', sans-serif;
-    background: linear-gradient(135deg, #ff9aa2, #ffc3a0);
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
+.sender { background:#ff4ecd; color:white; align-self:flex-end; }
+.receiver { background:#1c1c25; color:white; }
 
-/* HEADER */
-.header {
-    padding: 15px;
-    text-align: center;
-    font-weight: bold;
-    color: white;
-    background: rgba(255, 105, 135, 0.8);
-    backdrop-filter: blur(10px);
-}
+.time { font-size:10px; opacity:0.6; }
 
-/* CHAT AREA FULL */
-.chat {
-    flex: 1;
-    overflow-y: auto;
-    padding: 15px;
-    display: flex;
-    flex-direction: column;
-}
-
-/* MESSAGE */
-.msg {
-    margin: 5px 0;
-    padding: 10px 15px;
-    border-radius: 20px;
-    max-width: 75%;
-    font-size: 14px;
-    animation: fadeIn 0.25s ease;
-    word-wrap: break-word;
-}
-
-.me {
-    background: #ff4d6d;
-    color: white;
-    align-self: flex-end;
-    border-bottom-right-radius: 5px;
-}
-
-.other {
-    background: white;
-    color: #333;
-    align-self: flex-start;
-    border-bottom-left-radius: 5px;
-}
-
-/* INPUT FIX BAWAH */
-.input-box {
-    display: flex;
-    padding: 10px;
-    background: white;
-    position: sticky;
-    bottom: 0;
-}
+.input-box { display:flex; padding:10px; background:#1a1a22; }
 
 input {
-    flex: 1;
-    padding: 12px;
-    border-radius: 20px;
-    border: none;
-    outline: none;
-    background: #f1f1f1;
+  flex:1;
+  padding:10px;
+  border-radius:20px;
+  border:none;
+  background:#2a2a35;
+  color:white;
 }
 
 button {
-    margin-left: 10px;
-    padding: 12px 15px;
-    border-radius: 20px;
-    border: none;
-    background: #ff4d6d;
-    color: white;
-    font-weight: bold;
-}
-
-/* ANIMATION */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
+  margin-left:10px;
+  border:none;
+  border-radius:50%;
+  background:#ff4ecd;
+  color:white;
+  width:40px;
+  height:40px;
 }
 </style>
 </head>
 
 <body>
 
-<div class="header">💖 Private Chat 💖</div>
+<div class="app">
 
-<div class="chat" id="chat"></div>
+<div class="header">
+  <div class="name">Chatbox.</div>
+</div>
+
+<div id="chatBox" class="chat-box"></div>
 
 <div class="input-box">
-    <input id="msg" placeholder="Ketik sesuatu... 😏">
-    <button onclick="send()">Send</button>
+  <input id="messageInput" placeholder="Type message..." />
+  <button id="sendBtn">➤</button>
+  <button id="recordBtn">🎤</button>
+</div>
+
 </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-/* 🔥 CONFIG */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+import { getDatabase, ref, push, onChildAdded, update } 
+from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
+
+/* CONFIG */
 const firebaseConfig = {
-  apiKey: "AIzaSyAyVU9uwtZmugQuQOSz_4Bph3SR4604Xqs",
+  apiKey: "AIzaSyAyVU9uwtZmugQuQOSz_4Bph3SR46O4Xqs",
   authDomain: "dawn-38a84.firebaseapp.com",
   databaseURL: "https://dawn-38a84-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "dawn-38a84",
-  storageBucket: "dawn-38a84.appspot.com",
-  messagingSenderId: "965175436083",
-  appId: "1:965175436083:web:38d765d24bf176bb881446"
+  projectId: "dawn-38a84"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-/* USER */
-const room = prompt("Kode room:");
-const username = prompt("Nama kamu:");
+/* 🔐 LOGIN SIMPLE */
+let userId = localStorage.getItem("uid");
+if (!userId) {
+  userId = prompt("Masukin nama lo:");
+  localStorage.setItem("uid", userId);
+}
 
-/* SEND */
-window.send = function () {
-    let text = document.getElementById("msg").value;
-    if (!text) return;
+/* 💬 PRIVATE CHAT (1 room) */
+const chatId = "room1";
+const chatRef = ref(db, "chats/" + chatId);
 
-    push(ref(db, "chat/" + room), {
-        name: username,
-        text: text
+/* ELEMENT */
+const chatBox = document.getElementById("chatBox");
+const input = document.getElementById("messageInput");
+const sendBtn = document.getElementById("sendBtn");
+const recordBtn = document.getElementById("recordBtn");
+
+/* SEND TEXT */
+function sendMessage() {
+  if (!input.value.trim()) return;
+
+  push(chatRef, {
+    text: input.value,
+    sender: userId,
+    time: Date.now(),
+    seen: false
+  });
+
+  input.value = "";
+}
+
+sendBtn.onclick = sendMessage;
+input.addEventListener("keypress", e => {
+  if (e.key === "Enter") sendMessage();
+});
+
+/* 🎤 VOICE NOTE */
+let mediaRecorder;
+let chunks = [];
+
+recordBtn.onclick = async () => {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+  mediaRecorder = new MediaRecorder(stream);
+
+  mediaRecorder.start();
+  chunks = [];
+
+  mediaRecorder.ondataavailable = e => chunks.push(e.data);
+
+  mediaRecorder.onstop = () => {
+    const blob = new Blob(chunks);
+
+    push(chatRef, {
+      audio: URL.createObjectURL(blob),
+      sender: userId,
+      time: Date.now()
     });
+  };
 
-    document.getElementById("msg").value = "";
+  setTimeout(() => mediaRecorder.stop(), 3000); // record 3 detik
 };
 
-/* RECEIVE */
-onChildAdded(ref(db, "chat/" + room), (snapshot) => {
-    let data = snapshot.val();
+/* SHOW MESSAGE */
+onChildAdded(chatRef, snap => {
+  const msg = snap.val();
 
-    let div = document.createElement("div");
-    div.className = "msg " + (data.name === username ? "me" : "other");
-    div.innerText = data.text;
+  const div = document.createElement("div");
+  div.classList.add("message");
+  div.classList.add(msg.sender === userId ? "sender" : "receiver");
 
-    document.getElementById("chat").appendChild(div);
-    document.getElementById("chat").scrollTop = 999999;
+  if (msg.text) {
+    div.innerHTML = msg.text + "<div class='time'>✔✔</div>";
+  }
+
+  if (msg.audio) {
+    div.innerHTML = `<audio controls src="${msg.audio}"></audio>`;
+  }
+
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  /* ✔✔ READ */
+  if (msg.sender !== userId) {
+    update(snap.ref, { seen: true });
+  }
 });
+
 </script>
 
 </body>
