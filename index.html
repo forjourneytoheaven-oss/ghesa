@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Chat App Pro</title>
+<title>ENEL Chat</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
@@ -62,7 +62,7 @@ body {
   display:inline-block;
 }
 
-/* 🔥 INI FIX POSISI */
+/* POSISI */
 .sender {
   background:#ff4ecd;
   color:white;
@@ -75,6 +75,22 @@ body {
   align-self:flex-start;
 }
 
+/* USERNAME */
+.username {
+  font-size:11px;
+  opacity:0.7;
+  margin-bottom:4px;
+}
+
+.sender .username {
+  color:#ffd6f5;
+}
+
+.receiver .username {
+  color:#aaa;
+}
+
+/* TIME */
 .time {
   font-size:10px;
   opacity:0.6;
@@ -102,6 +118,7 @@ button {
   background:#ff4ecd;
   color:white;
   padding:8px 12px;
+  cursor:pointer;
 }
 </style>
 </head>
@@ -115,7 +132,7 @@ button {
   <button onclick="joinRoom()">Join</button>
 </div>
 
-<div class="header">Chat Room</div>
+<div class="header">ENEL Chat Room</div>
 
 <div id="chatBox" class="chat-box"></div>
 
@@ -129,7 +146,7 @@ button {
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded } 
+import { getDatabase, ref, push, onChildAdded, off } 
 from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
 
 /* CONFIG */
@@ -155,9 +172,8 @@ const chatBox = document.getElementById("chatBox");
 const input = document.getElementById("messageInput");
 const sendBtn = document.getElementById("sendBtn");
 
-/* ROOM STATE */
+/* STATE */
 let chatRef = null;
-let unsubscribe = null;
 let currentRoom = null;
 
 /* JOIN ROOM */
@@ -167,21 +183,20 @@ window.joinRoom = function() {
   if (room === currentRoom) return;
 
   currentRoom = room;
-
   chatBox.innerHTML = "";
+
+  /* stop listener lama */
+  if (chatRef) off(chatRef);
+
   chatRef = ref(db, "chats/" + room);
 
-  /* 🔥 STOP listener lama */
-  if (unsubscribe) unsubscribe();
-
-  /* 🔥 START listener baru */
-  unsubscribe = onChildAdded(chatRef, snap => {
+  /* listen baru */
+  onChildAdded(chatRef, snap => {
     const msg = snap.val();
 
     const div = document.createElement("div");
     div.classList.add("message");
 
-    /* 🔥 FIX POSISI */
     if (msg.sender === userId) {
       div.classList.add("sender");
     } else {
@@ -189,6 +204,7 @@ window.joinRoom = function() {
     }
 
     div.innerHTML = `
+      <div class="username">${msg.sender}</div>
       ${msg.text || ""}
       <div class="time">${new Date(msg.time).toLocaleTimeString()}</div>
     `;
